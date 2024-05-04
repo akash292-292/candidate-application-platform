@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardContent, CardActions, Button, Typography, Box, styled, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { hover } from '@testing-library/user-event/dist/hover';
 
 const StyledCardHeader = styled(CardHeader)(({ theme }) => ({
   display: 'flex',

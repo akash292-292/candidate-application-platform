@@ -1,14 +1,42 @@
 import axios from 'axios';
 
-export const getData = async (body) => {
+export const getData = async (body, filters) => {
+  console.log(filters);
   const data = await axios.post('https://api.weekday.technology/adhoc/getSampleJdJSON', body);
   console.log(data);
-  return data.data.jdList;
-}
+  
+  const filteredJobs = data.data.jdList.filter((job) => {
+    let match = true;
 
-export const getDataByFilters = async (body, filter) => {
-  const data = await axios.post('https://api.weekday.technology/adhoc/getSampleJdJSON', body);
-  return data.data.jdList;
+    // Filter by company name (case-insensitive)
+    if (filters.companyName && !job.companyName.toLowerCase().includes(filters.companyName.toLowerCase())) {
+      match = false;
+    }
+
+    // Filter by location (case-insensitive)
+    if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
+      match = false;
+    }
+
+    // Filter by minimum experience
+    if (filters.minExp && job.minExp < filters.minExp) {
+      match = false;
+    }
+
+    // Filter by job role (case-insensitive)
+    if (filters.jobRole && job.jobRole.toLowerCase() !== filters.jobRole.toLowerCase()) {
+      match = false;
+    }
+
+    // Filter by minimum salary
+    if (filters.minJdSalary && job.minJdSalary && job.minJdSalary < filters.minJdSalary) {
+      match = false;
+    }
+
+    return match;
+  });
+
+  return filteredJobs;
 }
 
 // {

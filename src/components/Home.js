@@ -4,47 +4,63 @@ import { getData } from '../utils/api';
 
 // pagination params
 const limit = 10;
-let offset = 0;
+let dataCount = 0;
+let prevDataCount = 0;
 
-const JobList = ({ data }) => {
+const JobList = ({ filters }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true); // Flag for infinite scroll
+  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     if (offset === 0) {
       initialLoad();
     }
-  }, [data]);
+  }, []);
 
   const initialLoad = async () => {
-    // Calculate number of rows based on card width and viewport width
-    const cardWidth = 345; // Assuming card width from JobCard
-    const viewportWidth = window.innerWidth;
-    const numCardsPerRow = Math.floor(viewportWidth / cardWidth);
-
-    const body = JSON.stringify({
-      limit,
-      offset,
-    });
-    const data = await getData(body);
-
-    offset++;
-
+    console.log('initial load');
     // Divide data into rows
     const rowData = [];
-    for (let i = 0; i < data.length; i += numCardsPerRow) {
-      console.log(data.slice(i, i + numCardsPerRow));
-      rowData.push(data.slice(i, i + numCardsPerRow));
-    }
-    console.log(rowData);
 
+    prevDataCount = dataCount;
+    while (dataCount - prevDataCount < 10) {
+      // Calculate number of rows based on card width and viewport width
+      const cardWidth = 345; // Assuming card width from JobCard
+      const viewportWidth = window.innerWidth;
+      const numCardsPerRow = Math.floor(viewportWidth / cardWidth);
+
+      const body = JSON.stringify({
+        limit,
+        offset,
+      });
+      console.log(filters);
+      const data = await getData(body, filters);
+      dataCount += data.length;
+
+      setOffset(offset + 1);
+
+      let i = 0;
+
+      if (rowData.length > 0 && rowData[rowData.length - 1].length != numCardsPerRow) {
+        let lastRowData = rowData[rowData.length - 1];
+        rowData[rowData.length - 1] = [...lastRowData, ...data.slice(0, numCardsPerRow - lastRowData.length)];
+        i = numCardsPerRow - lastRowData.length;
+      }
+
+      for (; i < data.length; i += numCardsPerRow) {
+        rowData.push(data.slice(i, i + numCardsPerRow));
+      }
+
+      setHasMore(dataCount - prevDataCount >= limit); // Update hasMore based on fetched data length
+    }
     setRows(rowData);
     setLoading(false); // Set loading to false after initial data is fetched
-    setHasMore(data.length === limit); // Update hasMore based on fetched data length
   };
 
   const fetchMoreData = async () => {
+    if (rows.length === 0) return;
     // Calculate number of cards per row based on card width and viewport width
     const cardWidth = 345; // Assuming card width from JobCard
     const viewportWidth = window.innerWidth;
@@ -56,20 +72,18 @@ const JobList = ({ data }) => {
         limit,
         offset,
       });
-      const data = await getData(body);
+      const data = await getData(body, filters);
+      dataCount += data.length;
 
-      offset++;
+      setOffset(offset + 1);
 
       // Divide data into rows
       const rowData = [...rows];
-
-      console.log(rows);
 
       let i = 0;
 
       if (rowData[rowData.length - 1].length != numCardsPerRow) {
         let lastRowData = rowData[rowData.length - 1];
-        console.log(lastRowData);
         rowData[rowData.length - 1] = [...lastRowData, ...data.slice(0, numCardsPerRow - lastRowData.length)];
         i = numCardsPerRow - lastRowData.length;
       }
@@ -108,7 +122,7 @@ const JobList = ({ data }) => {
           ))}
         </div>
       ))}
-      {loading && (
+      {hasMore && loading && (
         <div>
           Loading ....
         </div>
